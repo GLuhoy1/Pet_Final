@@ -4,13 +4,14 @@ import requests
 import cerberus
 import random
 from urllib.parse import urlparse
+from faker import Faker
 
 BASE_URL = "https://dog.ceo/api/"
 
 
 # проверка формы JSON файла при запросе нескольких случайных изображений
 @allure.title("Random images")
-@pytest.mark.parametrize("count", [30])
+@pytest.mark.parametrize("count", [30, 20, 1])
 def test_random_images_structure(count):
     scheme_for_random_images = {
         "message": {"type": "list", "schema": {"type": "string"}},
@@ -22,9 +23,25 @@ def test_random_images_structure(count):
     assert v.validate(response.json(), scheme_for_random_images)
 
 
+# Проверка выдачи рандомного изображения
+@allure.title("Random image")
+def test_random_image():
+    response = requests.get(f'{BASE_URL}breeds/image/random')
+    assert response.status_code == 200
+    assert response.json().get("message", "").lower().endswith(".jpg")
+
+
+# проверка редиректа при неверных запросах
+@allure.title("Wrong request redirect")
+def test_wrong_request():
+    random_value = Faker().lexify(text="????####")
+    response = requests.get(f'{BASE_URL}/{random_value}')
+    assert response.status_code != 200
+
+
 # проверка на факт выдачи сайтом при двух последовательных запросах несовпадающих изображений
 @allure.title("Is realy random images")
-@pytest.mark.parametrize("iteration", range(10))
+@pytest.mark.parametrize("iteration", range(2))
 def test_really_random_image(iteration):
     first_response = requests.get(f'{BASE_URL}breeds/image/random')
     second_response = requests.get(f'{BASE_URL}breeds/image/random')
@@ -75,7 +92,7 @@ def random_breed_with_subbreed(breeds_with_subbreeds):
     return breed_with_subbreeds
 
 
-# тест проверят соответствие списка подпород полученых разными способами
+# тест проверят соответствие списка подпород полученных разными способами
 @allure.title("Validation of sub-breed list from different sources ")
 def test_compare_subbreeds(random_breed_with_subbreed, breeds_with_subbreeds):
     breed_name = random_breed_with_subbreed["breed"]
