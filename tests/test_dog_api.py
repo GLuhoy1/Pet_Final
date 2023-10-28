@@ -136,6 +136,7 @@ def test_check_breed_image_existence(test_num, all_breeds):
 
 @allure.feature("DOG API TESTS")
 @allure.title("This test should be failure")
+@allure.issue("trouble waiting")
 def test_failure():
     response = requests.get(f'{BASE_URL}wrong')
     assert response.status_code == 200
