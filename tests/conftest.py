@@ -5,8 +5,8 @@ from selenium import webdriver
 def pytest_addoption(parser):
     parser.addoption("--headless", default="headless", action="store_true")
     parser.addoption("--base_url", default="http://192.168.1.68:8081/")
-    parser.addoption("--admin_login", default='user')
-    parser.addoption("--admin_password", default='bitnami')
+    parser.addoption("--admin_login", default='*****')
+    parser.addoption("--admin_password", default='******')
 
 
 @pytest.fixture()
