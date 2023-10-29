@@ -8,26 +8,33 @@ from faker import Faker
 
 BASE_URL = "https://dog.ceo/api/"
 SHEMA_IMAGES = {
-            "message": {
-                "type": "list",
-                "schema": {
-                    "type": "string",
-                    "regex": r"^https://images\.dog\.ceo/.+\.jpg$"
-                }
-            },
-            "status": {"type": "string", "allowed": ["success"]}
+    "message": {
+        "type": "list",
+        "schema": {
+            "type": "string",
+            "regex": r"^https://images\.dog\.ceo/.+\.jpg$"
         }
+    },
+    "status": {"type": "string", "allowed": ["success"]}
+}
 
 SHEM_ALL_BREEDS = {
-        "message": {
-            "type": "dict",
-            "valuesrules": {
-                "type": "list",
-                "schema": {"type": "string"}
-            }
-        },
-        "status": {"type": "string"}
-    }
+    "message": {
+        "type": "dict",
+        "valuesrules": {
+            "type": "list",
+            "schema": {"type": "string"}
+        }
+    },
+    "status": {"type": "string"}
+}
+
+FALSE_SHEMA = {
+    "status": {"type": "string", "allowed": ["error"]},
+    "message": {"type": "string"},
+    "code": {"type": "integer", "allowed": [404]}
+}
+
 
 # проверка формы JSON файла при запросе нескольких случайных изображений
 @allure.epic("DOG API TESTS")
@@ -177,10 +184,16 @@ def test_breed_random_images(breed):
 
 @allure.epic("DOG API TESTS")
 @allure.title("This test should be failure")
-# Ожидает 404 при правильном запросе
-def test_failer():
-    response = requests.get(f'{BASE_URL}breeds/list/all')
-    try:
-        assert response.status_code == 404
-    except AssertionError:
-        pass
+@pytest.mark.parametrize("false_url", [
+    "breeds/list/false1",
+    "breeds/list/false2",
+    "breeds/list/false3"
+])
+# Проверка ответов при неправильных запросах
+def test_failer(false_url):
+    url = f'{BASE_URL}{false_url}'
+    response = requests.get(url)
+    assert response.status_code == 404
+    response_json = response.json()
+    v = cerberus.Validator()
+    assert v.validate(response_json, FALSE_SHEMA), v.errors
