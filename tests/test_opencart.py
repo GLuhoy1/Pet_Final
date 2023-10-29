@@ -80,6 +80,7 @@ def test_del_product(browser, admin_login, i):
         BasePage(browser).capture_screenshot()
         raise AssertionError('TEST FAILD')
 
+
 @allure.epic("OPENCART")
 @allure.title('Проверка смены валюты')
 @pytest.mark.parametrize("currency", ["gbp", "eur", "usd"])
