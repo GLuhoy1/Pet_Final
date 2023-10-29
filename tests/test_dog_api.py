@@ -7,12 +7,22 @@ from urllib.parse import urlparse
 from faker import Faker
 
 BASE_URL = "https://dog.ceo/api/"
+SHEMA_IMAGES = {
+            "message": {
+                "type": "list",
+                "schema": {
+                    "type": "string",
+                    "regex": r"^https://images\.dog\.ceo/.+\.jpg$"
+                }
+            },
+            "status": {"type": "string", "allowed": ["success"]}
+        }
 
 
 # проверка формы JSON файла при запросе нескольких случайных изображений
-@allure.feature("DOG API TESTS")
+@allure.epic("DOG API TESTS")
 @allure.title("Random images")
-@pytest.mark.parametrize("count", [30, 20, 1])
+@pytest.mark.parametrize("count", [30, 10, 2])
 def test_random_images_structure(count):
     scheme_for_random_images = {
         "message": {"type": "list", "schema": {"type": "string"}},
@@ -25,7 +35,7 @@ def test_random_images_structure(count):
 
 
 # Проверка выдачи рандомного изображения
-@allure.feature("DOG API TESTS")
+@allure.epic("DOG API TESTS")
 @allure.title("Random image")
 def test_random_image():
     response = requests.get(f'{BASE_URL}breeds/image/random')
@@ -34,7 +44,7 @@ def test_random_image():
 
 
 # проверка редиректа при неверных запросах
-@allure.feature("DOG API TESTS")
+@allure.epic("DOG API TESTS")
 @allure.title("Wrong request redirect")
 def test_wrong_request():
     random_value = Faker().lexify(text="????####")
@@ -43,9 +53,9 @@ def test_wrong_request():
 
 
 # проверка на факт выдачи сайтом при двух последовательных запросах несовпадающих изображений
-@allure.feature("DOG API TESTS")
+@allure.epic("DOG API TESTS")
 @allure.title("Is realy random images")
-@pytest.mark.parametrize("iteration", range(2))
+@pytest.mark.parametrize("iteration", range(1))
 def test_really_random_image(iteration):
     first_response = requests.get(f'{BASE_URL}breeds/image/random')
     second_response = requests.get(f'{BASE_URL}breeds/image/random')
@@ -55,7 +65,7 @@ def test_really_random_image(iteration):
 
 
 # проверка соответствия формы списка всех пород
-@allure.feature("DOG API TESTS")
+@allure.epic("DOG API TESTS")
 @allure.title("check JSON structure of all breeds")
 def test_breed_list_api_response():
     scheme_for_all_breeds = {
@@ -91,14 +101,16 @@ def breeds_with_subbreeds():
 
 
 # фикстура возвращает 5 случайных пород с подпородами
-@pytest.fixture(params=[i for i in range(1)])
+@pytest.fixture(params=[i for i in range(5)])
 def random_breed_with_subbreed(breeds_with_subbreeds):
     breed_with_subbreeds = random.choice(breeds_with_subbreeds)
     return breed_with_subbreeds
 
 
 # тест проверят соответствие списка подпород полученных разными способами
-@allure.feature("DOG API TESTS")
+# по сути проверяет что при получении списков подпород 2 разными способами приходит одинаковы результат
+# test for test
+@allure.epic("DOG API TESTS")
 @allure.title("Validation of sub-breed list from different sources ")
 def test_compare_subbreeds(random_breed_with_subbreed, breeds_with_subbreeds):
     breed_name = random_breed_with_subbreed["breed"]
@@ -120,9 +132,9 @@ def all_breeds():
 
 
 # проверяет существование ссылки на картинку при запросе рандомного изображения
-@allure.feature("DOG API TESTS")
+@allure.epic("DOG API TESTS")
 @allure.title("Check the URL for random images")
-@pytest.mark.parametrize("test_num", range(1))
+@pytest.mark.parametrize("test_num", range(3))
 def test_check_breed_image_existence(test_num, all_breeds):
     breed = random.choice(all_breeds)
     url = f"{BASE_URL}breed/{breed}/images/random"
@@ -132,11 +144,39 @@ def test_check_breed_image_existence(test_num, all_breeds):
     assert "message" in data
     assert data["message"] is not None
     assert "breeds" in urlparse(data["message"]).path
+    assert data["message"].endswith(".jpg")
 
 
-@allure.feature("DOG API TESTS")
-@allure.title("This test should be failure")
-@allure.issue("trouble waiting")
-def test_failure():
-    response = requests.get(f'{BASE_URL}wrong')
+# проверка изображений подпород
+@allure.epic("DOG API TESTS")
+@allure.title("Check images by subbreed")
+@pytest.mark.parametrize("breed, subbreeds", [
+    ("australian", ["shepherd"]),
+    ("bulldog", ["boston", "english", "french"]),
+    ("deerhound", ["scottish"]),
+    ("elkhound", ["norwegian"]),
+    ("ridgeback", ["rhodesian"])
+])
+def test_subreed_images(breed, subbreeds):
+    for subreed in subbreeds:
+        response = requests.get(f'{BASE_URL}breed/{breed}/{subreed}/images')
+        assert response.status_code == 200
+        v = cerberus.Validator()
+        assert v.validate(response.json(), SHEMA_IMAGES)
+
+
+@allure.epic("DOG API TESTS")
+@allure.title("Check images by subbreed")
+@pytest.mark.parametrize("breed", ["affenpinscher", "bullterrier", "deerhound", "dhole"])
+def test_breed_random_images(breed):
+    response = requests.get(f'{BASE_URL}breed/{breed}/images')
     assert response.status_code == 200
+    v = cerberus.Validator()
+    assert v.validate(response.json(), SHEMA_IMAGES)
+
+@allure.epic("DOG API TESTS")
+@allure.title("This test should be failure")
+# Ожидает 404 при правильном запросе
+def test_failer():
+    response = requests.get(f'{BASE_URL}breeds/list/all')
+    assert response.status_code == 404
