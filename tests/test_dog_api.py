@@ -4,7 +4,7 @@ import requests
 import cerberus
 import random
 from urllib.parse import urlparse
-from faker import Faker
+
 
 BASE_URL = "https://dog.ceo/api/"
 SHEMA_IMAGES = {
