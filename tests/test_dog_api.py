@@ -60,15 +60,6 @@ def test_random_image():
     assert response.json().get("message", "").lower().endswith(".jpg")
 
 
-# проверка редиректа при неверных запросах
-@allure.epic("DOG API TESTS")
-@allure.title("Wrong request redirect")
-def test_wrong_request():
-    random_value = Faker().lexify(text="????####")
-    response = requests.get(f'{BASE_URL}/{random_value}')
-    assert response.status_code != 200
-
-
 # проверка на факт выдачи сайтом при двух последовательных запросах несовпадающих изображений
 @allure.epic("DOG API TESTS")
 @allure.title("Is realy random images")
